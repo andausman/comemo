@@ -68,14 +68,15 @@ class SupermemoryBackend(BackendAdapter):
                 )
                 lines = [r.content for r in results.results if getattr(r, "content", None)]
             else:
-                # no query yet — fetch most recent memories by date
+                # no query yet — fetch 5 most recent memories by date
                 page = self._client.list(
                     self._cfg.namespace,
+                    "memories",
                     sort="createdAt",
                     order="desc",
                     limit=5,
                 )
-                items = getattr(page, "results", None) or getattr(page, "data", None) or []
+                items = getattr(page, "memories", None) or getattr(page, "results", None) or []
                 lines = [r.content for r in items if getattr(r, "content", None)]
             return "\n".join(lines)
         except Exception as exc:

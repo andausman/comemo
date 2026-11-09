@@ -53,9 +53,9 @@ class Mem0Backend(BackendAdapter):
             return ""
         try:
             if query.strip():
-                raw = self._client.search(query=query, filters={"user_id": self._cfg.user_id}, top_k=10)
+                raw = self._client.search(query=query, filters={"user_id": self._cfg.user_id}, top_k=5)
             else:
-                # Broad recall (inspect / empty query) — get_all avoids the empty-query rejection
+                # Broad recall — get_all avoids the empty-query rejection, slice to 5 most recent
                 raw = self._client.get_all(filters={"user_id": self._cfg.user_id})
             if not raw:
                 return ""
@@ -63,7 +63,7 @@ class Mem0Backend(BackendAdapter):
             if not items:
                 return ""
             lines = []
-            for r in items:
+            for r in list(items)[-5:]:
                 if isinstance(r, str):
                     lines.append(r)
                 elif isinstance(r, dict):
