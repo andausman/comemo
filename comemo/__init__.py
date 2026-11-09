@@ -104,3 +104,15 @@ def register(ctx: Any) -> None:
 
     ctx.register_memory_provider(adapter)
     logger.info("comemo: memory provider registered")
+
+    try:
+        from .cli import register_cli, _dispatch
+        ctx.register_cli_command(
+            name="comemo",
+            help="Manage comemo memory providers",
+            setup_fn=register_cli,
+            handler_fn=_dispatch,
+        )
+        logger.info("comemo: CLI commands registered")
+    except Exception as exc:
+        logger.debug("comemo: CLI registration skipped: %s", exc)
