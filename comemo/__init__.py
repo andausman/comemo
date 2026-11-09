@@ -94,17 +94,7 @@ def register(ctx: Any) -> None:
     except (AttributeError, TypeError):
         pass
 
-    adapter = HermesAdapter(cfg, data_dir=data_dir)
-    if not adapter.is_available():
-        logger.warning(
-            "comemo: no providers available — enable at least one provider "
-            "(honcho, mem0, or supermemory) under plugins.comemo in config.yaml"
-        )
-        return
-
-    ctx.register_memory_provider(adapter)
-    logger.info("comemo: memory provider registered")
-
+    # Register CLI commands first — setup/status must work even before any provider is configured
     try:
         from .cli import register_cli, _dispatch
         ctx.register_cli_command(
@@ -116,3 +106,14 @@ def register(ctx: Any) -> None:
         logger.info("comemo: CLI commands registered")
     except Exception as exc:
         logger.debug("comemo: CLI registration skipped: %s", exc)
+
+    adapter = HermesAdapter(cfg, data_dir=data_dir)
+    if not adapter.is_available():
+        logger.warning(
+            "comemo: no providers available — enable at least one provider "
+            "(honcho, mem0, or supermemory) under plugins.comemo in config.yaml"
+        )
+        return
+
+    ctx.register_memory_provider(adapter)
+    logger.info("comemo: memory provider registered")
