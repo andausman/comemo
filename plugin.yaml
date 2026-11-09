@@ -1,0 +1,88 @@
+name: comemo
+version: "1.0.0"
+description: >
+  Composite Memory Meta-Provider — run Honcho, Mem0, and Supermemory
+  simultaneously. Fans out writes to all configured providers in parallel, merges
+  and deduplicates reads. Implements the MemoryProvider ABC as a single drop-in
+  plugin so Hermes users are no longer locked into one provider.
+author: Anda Usman
+homepage: https://github.com/andausman/comemo
+
+entrypoint: comemo:register
+
+requires_hermes: ">=0.21.0"
+
+requires_env:
+  - name: HONCHO_API_KEY
+    description: "Honcho API key — get one at honcho.dev (press Enter to skip)"
+    url: "https://honcho.dev"
+    secret: true
+  - name: MEM0_API_KEY
+    description: "Mem0 API key — get one at mem0.ai (press Enter to skip)"
+    url: "https://mem0.ai"
+    secret: true
+  - name: SUPERMEMORY_API_KEY
+    description: "Supermemory API key — get one at supermemory.ai (press Enter to skip)"
+    url: "https://supermemory.ai"
+    secret: true
+
+hooks:
+  - prefetch
+  - queue_prefetch
+  - sync_turn
+  - on_session_end
+  - on_pre_compress
+  - shutdown
+  - system_prompt_block
+  - recall_status
+
+python_dependencies:
+  - "honcho-ai>=2.0.1,<3"
+  - "mem0ai>=2.0.10,<3"
+  - "supermemory>=5.0.0,<6"
+  - "requests>=2.31,<3"
+  - "pyyaml>=6.0,<7"
+  - "pydantic>=2.0,<3"
+  - "certifi>=2024.0,<2027"
+
+config_schema:
+  honcho.enabled:
+    type: boolean
+    default: false
+    description: Enable Honcho (cloud conversation memory — honcho.dev)
+  honcho.api_key:
+    type: secret
+    description: Honcho API key
+    env: HONCHO_API_KEY
+  honcho.workspace:
+    type: string
+    default: hermes
+    description: Honcho workspace name
+  mem0.enabled:
+    type: boolean
+    default: false
+    description: Enable Mem0 (semantic memory with auto-extraction — mem0.ai)
+  mem0.api_key:
+    type: secret
+    description: Mem0 API key
+    env: MEM0_API_KEY
+  mem0.user_id:
+    type: string
+    default: hermes-user
+    description: Mem0 user ID
+  supermemory.enabled:
+    type: boolean
+    default: false
+    description: Enable Supermemory (3-layer retrieval — supermemory.ai)
+  supermemory.api_key:
+    type: secret
+    description: Supermemory API key
+    env: SUPERMEMORY_API_KEY
+  supermemory.namespace:
+    type: string
+    default: hermes
+    description: Supermemory namespace for isolating memories per profile
+  fan_out_timeout:
+    type: number
+    default: 5.0
+    description: Seconds to wait for each provider per operation before timing out
