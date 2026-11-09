@@ -28,9 +28,6 @@ dev = [
     "mypy>=1.10",
 ]
 
-[project.scripts]
-hermes-comemo = "comemo.wizard:main"
-
 [project.urls]
 Homepage = "https://github.com/andausman/comemo"
 Repository = "https://github.com/andausman/comemo.git"
