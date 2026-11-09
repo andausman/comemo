@@ -60,12 +60,23 @@ class SupermemoryBackend(BackendAdapter):
         if self._client is None:
             return ""
         try:
-            results = self._client.search(
-                namespace=self._cfg.namespace,
-                query=query,
-                limit=10,
-            )
-            lines = [r.content for r in results.results if getattr(r, "content", None)]
+            if query.strip():
+                results = self._client.search(
+                    namespace=self._cfg.namespace,
+                    query=query,
+                    limit=5,
+                )
+                lines = [r.content for r in results.results if getattr(r, "content", None)]
+            else:
+                # no query yet — fetch most recent memories by date
+                page = self._client.list(
+                    self._cfg.namespace,
+                    sort="createdAt",
+                    order="desc",
+                    limit=5,
+                )
+                items = getattr(page, "results", None) or getattr(page, "data", None) or []
+                lines = [r.content for r in items if getattr(r, "content", None)]
             return "\n".join(lines)
         except Exception as exc:
             logger.warning("comemo/supermemory: prefetch failed — %s", exc)
