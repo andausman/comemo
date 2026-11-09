@@ -8,8 +8,6 @@ description: >
 author: Anda Usman
 homepage: https://github.com/andausman/comemo
 
-entrypoint: comemo:register
-
 requires_hermes: ">=0.21.0"
 
 requires_env:

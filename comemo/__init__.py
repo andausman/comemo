@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import logging
 import os
-import subprocess
-import sys
 from typing import Any
 
 from .adapters.hermes import HermesAdapter
@@ -13,36 +11,6 @@ __version__ = "1.0.0"
 __all__ = ["register"]
 
 logger = logging.getLogger(__name__)
-
-_BACKEND_PACKAGES = [
-    ("honcho",      "honcho",      "honcho-ai"),
-    ("mem0",        "mem0",        "mem0ai"),
-    ("supermemory", "supermemory", "supermemory"),
-]
-
-
-def _auto_install_missing(cfg: "ComemoConfig") -> None:
-    enabled = {
-        "honcho":      cfg.honcho.enabled and bool(cfg.honcho.api_key),
-        "mem0":        cfg.mem0.enabled and bool(cfg.mem0.api_key),
-        "supermemory": cfg.supermemory.enabled and bool(cfg.supermemory.api_key),
-    }
-    for name, import_name, pip_name in _BACKEND_PACKAGES:
-        if not enabled.get(name):
-            continue
-        try:
-            __import__(import_name)
-        except ImportError:
-            logger.info("comemo: %s not found — installing %s ...", name, pip_name)
-            result = subprocess.run(
-                [sys.executable, "-m", "pip", "install", pip_name],
-                capture_output=True, text=True, timeout=120,
-            )
-            if result.returncode == 0:
-                logger.info("comemo: %s installed", pip_name)
-            else:
-                logger.warning("comemo: could not install %s: %s", pip_name, result.stderr.strip())
-                logger.debug("comemo: pip install %s stderr: %s", pip_name, result.stderr[:200])
 
 
 def _load_raw_cfg_from_file() -> dict[str, Any]:
@@ -84,9 +52,6 @@ def register(ctx: Any) -> None:
         raw_cfg = _load_raw_cfg_from_file()
 
     cfg = ComemoConfig.load(raw_cfg)
-
-    # auto-install in case hermes runs in a different venv than the install venv
-    _auto_install_missing(cfg)
 
     data_dir: str | None = None
     try:
