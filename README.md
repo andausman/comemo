@@ -44,7 +44,7 @@ On every read, Comemo queries all active providers in parallel, merges the resul
 
 ## Install
 
-There are three install paths. Use the one that matches how you got Hermes.
+There are two install paths. Use the one that matches how you got Hermes.
 
 ---
 
@@ -66,19 +66,6 @@ Select `comemo` when asked which provider to activate. This sets `memory.provide
 
 ---
 
-### From PyPI
-
-```bash
-pip install hermes-comemo
-hermes-comemo setup
-```
-
-`pip install` puts `hermes-comemo` on your PATH. The `setup` wizard asks which providers to enable, prompts for API keys, and writes everything to `~/.hermes/config.yaml` and `~/.hermes/.env`.
-
-Restart Hermes after setup and Comemo is live.
-
----
-
 ### From source
 
 ```bash
@@ -88,24 +75,13 @@ hermes plugins install .
 hermes memory setup
 ```
 
-Or with pip:
-
-```bash
-git clone https://github.com/andausman/comemo.git
-cd comemo
-pip install -e .
-hermes-comemo setup
-```
-
 ---
 
 ## Setup
 
-**After marketplace install:** run `hermes memory setup` — Hermes presents each field from the config schema and writes settings to `~/.hermes/config.yaml` and keys to `~/.hermes/.env`.
+**After install:** run `hermes memory setup` — Hermes presents each field from the config schema and writes settings to `~/.hermes/config.yaml` and keys to `~/.hermes/.env`.
 
-**After pip install:** run `hermes-comemo setup` — runs the full interactive wizard below.
-
-### hermes-comemo setup wizard
+### hermes comemo setup
 
 ```
 Comemo — Composite Memory Meta-Provider
@@ -140,7 +116,7 @@ memory.provider set to comemo. Restart Hermes to activate.
 
 ## Commands
 
-All commands are available via `hermes-comemo <cmd>` after `pip install hermes-comemo`.
+Run these commands from your terminal once Comemo is installed and active.
 
 ### setup
 
@@ -175,7 +151,7 @@ testing Comemo providers  (session: comemo-test-session-a1b2c3)
 Queries all enabled providers and shows what is stored. Uses a broad recall by default so you get recent memories without needing to know what to search for.
 
 ```
-hermes-comemo inspect
+hermes comemo inspect
 
 inspecting Comemo providers  (query: (all memories), limit: 20)
 
@@ -194,27 +170,17 @@ inspecting Comemo providers  (query: (all memories), limit: 20)
 Use `--query` to filter by topic and `--limit` to control how many entries are shown per provider (default 20):
 
 ```bash
-hermes-comemo inspect --query "python preferences" --limit 5
-```
-
-### help
-
-Prints all available commands.
-
-```bash
-hermes-comemo help
+hermes comemo inspect --query "python preferences" --limit 5
 ```
 
 ---
 
 ## Verifying it works end to end
 
-1. Run `hermes-comemo test` (pip install) — all enabled providers should show OK.
+1. Run `hermes comemo test` — all enabled providers should show OK.
 2. Start a Hermes session and have a short conversation. Mention something specific.
-3. Run `hermes-comemo inspect` (pip install) — you should see the conversation stored across your enabled providers.
+3. Run `hermes comemo inspect` — you should see the conversation stored across your enabled providers.
 4. Start a new Hermes session and ask "what do you remember about me?" — Comemo injects the recalled memories into the system prompt, so Hermes will reference what was said before.
-
-`hermes-comemo` commands require `pip install hermes-comemo`. Marketplace-only users can verify via `hermes memory status` and by checking that recalled context appears in Hermes sessions.
 
 ---
 
@@ -292,4 +258,3 @@ API keys can also be set as environment variables. Comemo reads `HONCHO_API_KEY`
 ## Failure handling
 
 If a provider goes down, Comemo keeps running on the remaining ones. Failed writes go into a local SQLite retry queue. At the start of the next session, Comemo replays them automatically. Each item is retried up to 5 times.
-
