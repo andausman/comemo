@@ -54,15 +54,7 @@ There are two install paths. Use the one that matches how you got Hermes.
 hermes plugins install comemo
 ```
 
-During install, Hermes prompts for each provider's API key. Press Enter to skip providers you don't want. Keys are saved to `~/.hermes/.env`.
-
-Then run:
-
-```bash
-hermes memory setup
-```
-
-Select `comemo` when asked which provider to activate. This sets `memory.provider: comemo` in your config and walks through enabling each provider. Restart Hermes after and Comemo is live.
+Then run `hermes memory setup` — Hermes walks through enabling each provider and stores API keys securely in its secret scope. Restart Hermes after and Comemo is live.
 
 ---
 
@@ -79,7 +71,7 @@ hermes memory setup
 
 ## Setup
 
-**After install:** run `hermes memory setup` — Hermes presents each field from the config schema and writes settings to `~/.hermes/config.yaml` and keys to `~/.hermes/.env`.
+**After install:** run `hermes memory setup` — Hermes presents each field from the config schema, writes non-secret settings to `~/.hermes/config.yaml`, and stores API keys securely in its secret scope.
 
 ### hermes comemo setup
 
@@ -93,14 +85,12 @@ Each provider you enable runs in parallel — reads and writes fan out to all of
 Honcho  (peer-based persistent user modeling)
   Tracks who you are across sessions. Get a key at honcho.dev
   Enable Honcho? [y/N]: y
-    API key: ............
-    Workspace [hermes]:
+  Workspace [hermes]:
 
 Mem0  (fact extraction via LLM + semantic retrieval)
   Automatically pulls facts from conversations. Get a key at mem0.ai
   Enable Mem0? [y/N]: y
-    API key: ............
-    User ID [hermes-user]:
+  User ID [hermes-user]:
 
 Supermemory  (3-layer retrieval: profile + entity graph + document RAG)
   Get a key at console.supermemory.ai
@@ -109,7 +99,7 @@ Supermemory  (3-layer retrieval: profile + entity graph + document RAG)
 Config written to ~/.hermes/config.yaml
 Active providers: honcho, mem0
 
-memory.provider set to comemo. Restart Hermes to activate.
+Run 'hermes memory setup' to set your API keys, then start a new session.
 ```
 
 ---
@@ -120,7 +110,7 @@ Run these commands from your terminal once Comemo is installed and active.
 
 ### setup
 
-Runs the setup wizard. Prompts for which providers to enable, asks for API keys, and writes the config to `~/.hermes/config.yaml`. Automatically detects existing native Hermes provider configs and pre-fills credentials if found.
+Runs the setup wizard. Prompts for which providers to enable and writes non-secret settings to `~/.hermes/config.yaml`. Run `hermes memory setup` separately to set API keys.
 
 ### status
 
@@ -129,8 +119,8 @@ Shows what is configured without making any network calls.
 ```
 comemo  (/home/user/.hermes/config.yaml)
 
-  honcho       enabled   workspace: hermes
-  mem0         enabled   user_id: hermes-user
+  honcho       enabled   workspace=hermes
+  mem0         enabled   user_id=hermes-user
   supermemory  disabled
 ```
 
@@ -243,15 +233,7 @@ plugins:
       namespace: hermes
 ```
 
-API keys go in `~/.hermes/.env`, not `config.yaml`:
-
-```bash
-HONCHO_API_KEY=hc_your_key
-MEM0_API_KEY=m0_your_key
-SUPERMEMORY_API_KEY=sm_your_key
-```
-
-API keys can also be set as environment variables. Comemo reads `HONCHO_API_KEY`, `MEM0_API_KEY`, and `SUPERMEMORY_API_KEY` automatically so you never have to put secrets in a config file.
+API keys are stored securely by Hermes via `hermes memory setup` — never written to `config.yaml`. Comemo reads them through the Hermes secret scope (`HONCHO_API_KEY`, `MEM0_API_KEY`, `SUPERMEMORY_API_KEY`).
 
 ---
 
