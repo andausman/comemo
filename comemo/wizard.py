@@ -1,14 +1,25 @@
 from __future__ import annotations
 
-import json
 import os
 import sys
 import tempfile
 from typing import Any
 
 
+def _read_secret(name: str) -> str:
+    try:
+        from agent.secret_scope import get_secret
+        return get_secret(name) or ""
+    except Exception:
+        return os.environ.get(name, "")
+
+
 def _hermes_home() -> str:
-    return os.environ.get("HERMES_HOME") or os.path.expanduser("~/.hermes")
+    try:
+        from hermes_constants import get_hermes_home
+        return get_hermes_home()
+    except Exception:
+        return os.environ.get("HERMES_HOME") or os.path.expanduser("~/.hermes")
 
 
 def _hermes_config_path() -> str:
@@ -31,40 +42,6 @@ def _save_yaml(path: str, data: dict[str, Any]) -> None:
         yaml.dump(data, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
 
 
-def _save_env_keys(path: str, keys: dict[str, str]) -> None:
-    lines: list[str] = []
-    try:
-        with open(path) as f:
-            lines = f.readlines()
-    except FileNotFoundError:
-        pass
-    updated = {k: False for k in keys}
-    for i, line in enumerate(lines):
-        for env_key, value in keys.items():
-            if line.startswith(f"{env_key}=") or line.startswith(f"{env_key} ="):
-                lines[i] = f"{env_key}={value}\n"
-                updated[env_key] = True
-    for env_key, value in keys.items():
-        if not updated[env_key]:
-            lines.append(f"{env_key}={value}\n")
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w") as f:
-        f.writelines(lines)
-
-
-def _load_env(path: str) -> dict[str, str]:
-    env: dict[str, str] = {}
-    try:
-        with open(path) as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#") or "=" not in line:
-                    continue
-                key, _, value = line.partition("=")
-                env[key.strip()] = value.strip().strip('"').strip("'")
-    except FileNotFoundError:
-        pass
-    return env
 
 
 def _ask(prompt: str, default: str = "", secret: bool = False) -> str:
@@ -102,30 +79,6 @@ def _ask_bool(prompt: str, default: bool = False) -> bool:
         sys.exit(0)
 
 
-def _check_package(import_name: str, pip_package: str) -> bool:
-    try:
-        __import__(import_name)
-        return True
-    except ImportError:
-        import subprocess
-        print(f"  Installing {pip_package}...")
-        result = subprocess.run(
-            [sys.executable, "-m", "pip", "install", pip_package],
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode == 0:
-            try:
-                __import__(import_name)
-                print(f"  {pip_package} installed.")
-                return True
-            except ImportError:
-                pass
-        print(f"  Could not install {pip_package} automatically.")
-        print(f"  Run manually: pip install {pip_package}")
-        return False
-
-
 def _ping(endpoint: str) -> bool:
     try:
         import urllib.request
@@ -136,42 +89,15 @@ def _ping(endpoint: str) -> bool:
 
 
 def _detect_native_configs() -> dict[str, str]:
-    home = _hermes_home()
-    env = _load_env(os.path.join(home, ".env"))
     found: dict[str, str] = {}
-
-    # Honcho: honcho.json has the key under "apiKey"
-    honcho_path = os.path.join(home, "honcho.json")
-    try:
-        with open(honcho_path) as f:
-            hcfg = json.load(f)
-        key = hcfg.get("apiKey") or env.get("HONCHO_API_KEY", "")
+    for env_var, cfg_key in [
+        ("HONCHO_API_KEY",      "honcho_api_key"),
+        ("MEM0_API_KEY",        "mem0_api_key"),
+        ("SUPERMEMORY_API_KEY", "supermemory_api_key"),
+    ]:
+        key = _read_secret(env_var)
         if key:
-            found["honcho_api_key"] = key
-        if hcfg.get("workspace"):
-            found["honcho_workspace"] = hcfg["workspace"]
-    except (FileNotFoundError, json.JSONDecodeError):
-        if env.get("HONCHO_API_KEY"):
-            found["honcho_api_key"] = env["HONCHO_API_KEY"]
-
-    # Mem0: key is in .env only
-    if env.get("MEM0_API_KEY"):
-        found["mem0_api_key"] = env["MEM0_API_KEY"]
-
-    # Supermemory: key in .env, base_url optionally in supermemory.json
-    if env.get("SUPERMEMORY_API_KEY"):
-        found["supermemory_api_key"] = env["SUPERMEMORY_API_KEY"]
-    sm_path = os.path.join(home, "supermemory.json")
-    try:
-        with open(sm_path) as f:
-            smcfg = json.load(f)
-        if smcfg.get("base_url"):
-            found["supermemory_base_url"] = smcfg["base_url"]
-        if smcfg.get("container_tag"):
-            found["supermemory_namespace"] = smcfg["container_tag"]
-    except (FileNotFoundError, json.JSONDecodeError):
-        pass
-
+            found[cfg_key] = key
     return found
 
 
@@ -213,7 +139,7 @@ def status() -> None:
     print()
 
     if not comemo:
-        print("  No comemo config found. Run: hermes-comemo setup")
+        print("  No comemo config found. Run: hermes comemo setup")
         print()
         return
 
@@ -336,7 +262,7 @@ def test() -> None:
 
     print()
     print(f"  Test data written under session '{session_id}'.")
-    print(f"  Run 'hermes-comemo inspect --query \"{marker}\"' to see what was stored.")
+    print(f"  Run 'hermes comemo inspect --query \"{marker}\"' to see what was stored.")
     print()
 
 
@@ -412,12 +338,6 @@ def run() -> None:
         active_now = [k for k, v in existing_comemo.items() if isinstance(v, dict) and v.get("enabled")]
         print(f"  Existing config found — currently active: {', '.join(active_now) or 'none'}")
         print("  Press Enter on each prompt to keep current values.\n")
-    elif detected:
-        providers_found = sorted({k.split("_")[0] for k in detected if k.endswith("_api_key")})
-        if providers_found:
-            print(f"  Found existing credentials for: {', '.join(providers_found)}")
-            print("  These will be pre-filled below — press Enter to accept.\n")
-
     comemo_cfg: dict[str, Any] = {}
 
     # --- Honcho ---
@@ -425,16 +345,9 @@ def run() -> None:
     print("  Tracks who you are across sessions. Get a key at honcho.dev")
     existing_key = detected.get("honcho_api_key", "")
     currently_enabled = bool(existing_comemo.get("honcho", {}).get("enabled")) if is_reconfigure else bool(existing_key)
-    if existing_key:
-        print(f"  Found existing key: {existing_key[:8]}...")
     if _ask_bool("Enable Honcho?", default=currently_enabled):
-        api_key = _ask("API key", default=existing_key, secret=True)
-        if not api_key:
-            print("  Skipped — no API key.")
-        else:
-            _check_package("honcho", "honcho-ai")
-            workspace = _ask("Workspace", default=detected.get("honcho_workspace", "hermes"))
-            comemo_cfg["honcho"] = {"enabled": True, "api_key": api_key, "workspace": workspace}
+        workspace = _ask("Workspace", default=detected.get("honcho_workspace", "hermes"))
+        comemo_cfg["honcho"] = {"enabled": True, "workspace": workspace}
     print()
 
     # --- Mem0 ---
@@ -442,16 +355,9 @@ def run() -> None:
     print("  Automatically pulls facts from conversations. Get a key at mem0.ai")
     existing_key = detected.get("mem0_api_key", "")
     currently_enabled = bool(existing_comemo.get("mem0", {}).get("enabled")) if is_reconfigure else bool(existing_key)
-    if existing_key:
-        print(f"  Found existing key: {existing_key[:8]}...")
     if _ask_bool("Enable Mem0?", default=currently_enabled):
-        api_key = _ask("API key", default=existing_key, secret=True)
-        if not api_key:
-            print("  Skipped — no API key.")
-        else:
-            _check_package("mem0", "mem0ai")
-            user_id = _ask("User ID", default=detected.get("mem0_user_id", "hermes-user"))
-            comemo_cfg["mem0"] = {"enabled": True, "api_key": api_key, "user_id": user_id}
+        user_id = _ask("User ID", default=detected.get("mem0_user_id", "hermes-user"))
+        comemo_cfg["mem0"] = {"enabled": True, "user_id": user_id}
     print()
 
     # --- Supermemory ---
@@ -459,54 +365,29 @@ def run() -> None:
     print("  Get a key at console.supermemory.ai  or run 'npx supermemory local' for self-hosted")
     existing_key = detected.get("supermemory_api_key", "")
     currently_enabled = bool(existing_comemo.get("supermemory", {}).get("enabled")) if is_reconfigure else bool(existing_key)
-    if existing_key:
-        print(f"  Found existing key: {existing_key[:8]}...")
     if _ask_bool("Enable Supermemory?", default=currently_enabled):
-        api_key = _ask("API key", default=existing_key, secret=True)
-        if not api_key:
-            print("  Skipped — no API key.")
-        else:
-            _check_package("supermemory", "supermemory")
-            base_url = _ask("Base URL", default=detected.get("supermemory_base_url", "https://api.supermemory.ai"))
-            namespace = _ask("Namespace", default=detected.get("supermemory_namespace", "hermes"))
-            print("  Tip: use a unique namespace per Hermes profile to keep memory isolated.")
-            comemo_cfg["supermemory"] = {
-                "enabled": True, "api_key": api_key,
-                "base_url": base_url, "namespace": namespace,
-            }
+        namespace = _ask("Namespace", default=detected.get("supermemory_namespace", "hermes"))
+        print("  Tip: use a unique namespace per Hermes profile to keep memory isolated.")
+        comemo_cfg["supermemory"] = {"enabled": True, "namespace": namespace}
     print()
 
     active = [k for k, v in comemo_cfg.items() if isinstance(v, dict) and v.get("enabled")]
     if not active:
         print("No providers configured. Nothing written.")
-        print("Run hermes-comemo setup again when you have at least one API key ready.")
+        print("Run hermes comemo setup again when you have at least one API key ready.")
         print()
         return
 
-    env_keys: dict[str, str] = {}
-    _env_map = {
-        "honcho": "HONCHO_API_KEY",
-        "mem0": "MEM0_API_KEY",
-        "supermemory": "SUPERMEMORY_API_KEY",
-    }
-    for provider, env_var in _env_map.items():
-        key = comemo_cfg.get(provider, {}).get("api_key", "") if isinstance(comemo_cfg.get(provider), dict) else ""
-        if key:
-            env_keys[env_var] = key
-    if env_keys:
-        _save_env_keys(os.path.join(_hermes_home(), ".env"), env_keys)
-
     config_path = _hermes_config_path()
     try:
-        cfg = _load_yaml(config_path)
-        cfg.setdefault("memory", {})
-        cfg["memory"]["provider"] = "comemo"
-        cfg.setdefault("plugins", {})
-        cfg["plugins"].setdefault("enabled", [])
-        cfg["plugins"]["comemo"] = comemo_cfg
-        if "comemo" not in cfg["plugins"]["enabled"]:
-            cfg["plugins"]["enabled"].append("comemo")
-        _save_yaml(config_path, cfg)
+        # Write only plugins.comemo — leave the rest of config.yaml untouched
+        try:
+            from hermes_cli import config as hermes_config
+            hermes_config.set_plugin_config("comemo", comemo_cfg)
+        except Exception:
+            cfg = _load_yaml(config_path)
+            cfg.setdefault("plugins", {})["comemo"] = comemo_cfg
+            _save_yaml(config_path, cfg)
         print(f"Config written to {config_path}")
     except Exception as exc:
         print(f"Could not write to {config_path} ({exc})")
@@ -517,6 +398,8 @@ def run() -> None:
         return
 
     print(f"Active providers: {', '.join(active)}")
+    print()
+    print("To set API keys securely, run: hermes memory setup")
     print()
 
     # resolves deps and builds the plugin venv; best-effort — config.yaml is enough if hermes isn't on PATH
@@ -539,7 +422,7 @@ def run() -> None:
         print(f"Warning: could not run hermes plugins enable — {exc}")
 
     print()
-    print("memory.provider set to comemo. Restart Hermes to activate.")
+    print("Run 'hermes memory setup' to set your API keys, then 'hermes plugins enable comemo'.")
     print()
 
 
@@ -555,8 +438,7 @@ def _banner() -> None:
 
 def _print_manual_block(comemo_cfg: dict[str, Any]) -> None:
     import yaml
-    block = {
-        "memory": {"provider": "comemo"},
-        "plugins": {"comemo": comemo_cfg, "enabled": ["comemo"]},
-    }
+    block = {"plugins": {"comemo": comemo_cfg}}
     print(yaml.dump(block, default_flow_style=False, sort_keys=False))
+    print("Then run: hermes plugins enable comemo")
+    print("And run:  hermes memory setup  (to set API keys)")

@@ -5,6 +5,14 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
+def _read_secret(name: str) -> str:
+    try:
+        from agent.secret_scope import get_secret
+        return get_secret(name) or ""
+    except Exception:
+        return os.environ.get(name, "")
+
+
 @dataclass
 class HonchoConfig:
     enabled: bool = False
@@ -14,7 +22,7 @@ class HonchoConfig:
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> HonchoConfig:
-        api_key = d.get("api_key") or os.environ.get("HONCHO_API_KEY", "")
+        api_key = d.get("api_key") or _read_secret("HONCHO_API_KEY")
         return cls(
             enabled=bool(d.get("enabled", bool(api_key))),
             api_key=api_key,
@@ -33,13 +41,13 @@ class Mem0Config:
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Mem0Config:
-        api_key = d.get("api_key") or os.environ.get("MEM0_API_KEY", "")
+        api_key = d.get("api_key") or _read_secret("MEM0_API_KEY")
         return cls(
             enabled=bool(d.get("enabled", bool(api_key))),
             api_key=api_key,
             user_id=d.get("user_id", "hermes-user"),
             agent_id=d.get("agent_id", "hermes"),
-            base_url=d.get("base_url") or os.environ.get("MEM0_BASE_URL", ""),
+            base_url=d.get("base_url") or _read_secret("MEM0_BASE_URL"),
         )
 
 
@@ -52,7 +60,7 @@ class SupermemoryConfig:
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> SupermemoryConfig:
-        api_key = d.get("api_key") or os.environ.get("SUPERMEMORY_API_KEY", "")
+        api_key = d.get("api_key") or _read_secret("SUPERMEMORY_API_KEY")
         return cls(
             enabled=bool(d.get("enabled", bool(api_key))),
             api_key=api_key,

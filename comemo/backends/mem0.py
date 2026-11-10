@@ -26,7 +26,7 @@ class Mem0Backend(BackendAdapter):
             import mem0  # noqa: F401
             return True
         except ImportError:
-            logger.debug("comemo/mem0: mem0ai not installed — pip install mem0ai")
+            logger.debug("comemo/mem0: mem0ai not installed — reinstall the plugin: hermes plugins install comemo")
             return False
 
     def initialize(self, session_id: str, hermes_home: str) -> None:

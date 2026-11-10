@@ -13,9 +13,17 @@ from ..core import ComemoCore
 logger = logging.getLogger(__name__)
 
 
+def _get_hermes_home() -> str:
+    try:
+        from hermes_constants import get_hermes_home
+        return get_hermes_home()
+    except Exception:
+        return os.environ.get("HERMES_HOME") or os.path.expanduser("~/.hermes")
+
+
 def _load_cfg_from_file() -> "ComemoConfig":
     # read comemo section from ~/.hermes/config.yaml when no cfg is injected
-    hermes_home = os.environ.get("HERMES_HOME", os.path.expanduser("~/.hermes"))
+    hermes_home = _get_hermes_home()
     config_path = os.path.join(hermes_home, "config.yaml")
     try:
         with open(config_path) as f:
@@ -151,101 +159,58 @@ class HermesAdapter(_BASE):  # type: ignore[misc,valid-type]
         return None
 
     def get_config_schema(self) -> list[dict[str, Any]]:
-        # API keys come from requires_env at install time — only show config fields
-        # for providers whose key is already present. Skip providers with no key set.
-        fields: list[dict[str, Any]] = []
-
-        if os.environ.get("HONCHO_API_KEY"):
-            fields += [
-                {"key": "honcho.workspace",
-                 "description": "Honcho workspace name — isolates memories per team or profile",
-                 "type": "string", "default": "hermes"},
-            ]
-
-        if os.environ.get("MEM0_API_KEY"):
-            fields += [
-                {"key": "mem0.user_id",
-                 "description": "Mem0 user ID — scopes memories to this identity",
-                 "type": "string", "default": "hermes-user"},
-            ]
-
-        if os.environ.get("SUPERMEMORY_API_KEY"):
-            fields += [
-                {"key": "supermemory.namespace",
-                 "description": "Supermemory namespace — isolates memories per profile",
-                 "type": "string", "default": "hermes"},
-            ]
-
-        return fields
+        return [
+            {"key": "honcho.enabled",
+             "description": "Enable Honcho (cloud conversation memory — honcho.dev)",
+             "type": "boolean", "default": False},
+            {"key": "honcho.api_key",
+             "description": "Honcho API key (honcho.dev)",
+             "type": "secret", "env_var": "HONCHO_API_KEY"},
+            {"key": "honcho.workspace",
+             "description": "Honcho workspace name — isolates memories per team or profile",
+             "type": "string", "default": "hermes"},
+            {"key": "mem0.enabled",
+             "description": "Enable Mem0 (semantic memory with auto-extraction — mem0.ai)",
+             "type": "boolean", "default": False},
+            {"key": "mem0.api_key",
+             "description": "Mem0 API key (mem0.ai)",
+             "type": "secret", "env_var": "MEM0_API_KEY"},
+            {"key": "mem0.user_id",
+             "description": "Mem0 user ID — scopes memories to this identity",
+             "type": "string", "default": "hermes-user"},
+            {"key": "supermemory.enabled",
+             "description": "Enable Supermemory (3-layer retrieval — supermemory.ai)",
+             "type": "boolean", "default": False},
+            {"key": "supermemory.api_key",
+             "description": "Supermemory API key (supermemory.ai)",
+             "type": "secret", "env_var": "SUPERMEMORY_API_KEY"},
+            {"key": "supermemory.namespace",
+             "description": "Supermemory namespace — isolates memories per profile",
+             "type": "string", "default": "hermes"},
+        ]
 
     def save_config(self, values: dict[str, Any], hermes_home: str) -> None:
-        config_path = os.path.join(hermes_home, "config.yaml")
-        cfg: dict[str, Any] = {}
-        if os.path.exists(config_path):
-            with open(config_path) as f:
-                cfg = yaml.safe_load(f) or {}
-
-        # Unflatten dotted keys into nested provider sections
+        # Unflatten dotted keys — skip secret api_key fields, Hermes stores those
         comemo_cfg: dict[str, Any] = {}
         for key, val in values.items():
+            if key.endswith(".api_key"):
+                continue
             if "." in key:
                 provider, field = key.split(".", 1)
-                if provider not in comemo_cfg:
-                    comemo_cfg[provider] = {}
-                comemo_cfg[provider][field] = val
+                comemo_cfg.setdefault(provider, {})[field] = val
             else:
                 comemo_cfg[key] = val
 
-        if "plugins" not in cfg:
-            cfg["plugins"] = {}
-        cfg["plugins"]["comemo"] = comemo_cfg
-        if "enabled" not in cfg["plugins"]:
-            cfg["plugins"]["enabled"] = []
-        if "comemo" not in cfg["plugins"]["enabled"]:
-            cfg["plugins"]["enabled"].append("comemo")
-
-        # Memory providers activate via memory.provider, not plugins.enabled
-        if "memory" not in cfg:
-            cfg["memory"] = {}
-        cfg["memory"]["provider"] = "comemo"
-
-        with open(config_path, "w") as f:
-            yaml.safe_dump(cfg, f, default_flow_style=False, allow_unicode=True)
-
-        # Write API keys to ~/.hermes/.env so they survive reinstalls and are picked
-        # up by os.environ (Hermes sources .env on startup).
-        _ENV_KEY_MAP = {
-            "honcho.api_key":        "HONCHO_API_KEY",
-            "mem0.api_key":          "MEM0_API_KEY",
-            "supermemory.api_key":   "SUPERMEMORY_API_KEY",
-        }
-        env_updates: dict[str, str] = {}
-        for flat_key, env_var in _ENV_KEY_MAP.items():
-            if flat_key in values and values[flat_key]:
-                env_updates[env_var] = values[flat_key]
-        if env_updates:
-            self._merge_env_file(os.path.join(hermes_home, ".env"), env_updates)
-
-    @staticmethod
-    def _merge_env_file(path: str, keys: dict[str, str]) -> None:
-        lines: list[str] = []
+        # Write only plugins.comemo — leave the rest of config.yaml untouched
         try:
-            with open(path) as f:
-                lines = f.readlines()
-        except FileNotFoundError:
-            pass
-        updated = {k: False for k in keys}
-        for i, line in enumerate(lines):
-            for env_key, value in keys.items():
-                if line.startswith(f"{env_key}=") or line.startswith(f"{env_key} ="):
-                    # strip embedded newlines so they can't break the .env format
-                    value = value.replace('\n', '').replace('\r', '')
-                    lines[i] = f"{env_key}={value}\n"
-                    updated[env_key] = True
-        for env_key, value in keys.items():
-            if not updated[env_key]:
-                value = value.replace('\n', '').replace('\r', '')
-                lines.append(f"{env_key}={value}\n")
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w") as f:
-            f.writelines(lines)
+            from hermes_cli import config as hermes_config
+            hermes_config.set_plugin_config("comemo", comemo_cfg)
+        except Exception:
+            config_path = os.path.join(hermes_home, "config.yaml")
+            cfg: dict[str, Any] = {}
+            if os.path.exists(config_path):
+                with open(config_path) as f:
+                    cfg = yaml.safe_load(f) or {}
+            cfg.setdefault("plugins", {})["comemo"] = comemo_cfg
+            with open(config_path, "w") as f:
+                yaml.safe_dump(cfg, f, default_flow_style=False, allow_unicode=True)

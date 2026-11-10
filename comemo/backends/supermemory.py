@@ -28,7 +28,7 @@ class SupermemoryBackend(BackendAdapter):
             import supermemory  # noqa: F401
             return True
         except ImportError:
-            logger.debug("comemo/supermemory: supermemory not installed — pip install supermemory")
+            logger.debug("comemo/supermemory: supermemory not installed — reinstall the plugin: hermes plugins install comemo")
             return False
 
     def initialize(self, session_id: str, hermes_home: str) -> None:
