@@ -335,7 +335,15 @@ def run() -> None:
     detected = _merge_known(detected, existing_comemo)
 
     if is_reconfigure:
-        active_now = [k for k, v in existing_comemo.items() if isinstance(v, dict) and v.get("enabled")]
+        from .config import ComemoConfig
+        active_cfg = ComemoConfig.load(existing_comemo)
+        active_now = [
+            name for name, enabled in [
+                ("honcho", active_cfg.honcho.enabled),
+                ("mem0", active_cfg.mem0.enabled),
+                ("supermemory", active_cfg.supermemory.enabled),
+            ] if enabled
+        ]
         print(f"  Existing config found — currently active: {', '.join(active_now) or 'none'}")
         print("  Press Enter on each prompt to keep current values.\n")
     comemo_cfg: dict[str, Any] = {}
@@ -344,7 +352,7 @@ def run() -> None:
     print("Honcho  (peer-based persistent user modeling)")
     print("  Tracks who you are across sessions. Get a key at honcho.dev")
     existing_key = detected.get("honcho_api_key", "")
-    currently_enabled = bool(existing_comemo.get("honcho", {}).get("enabled")) if is_reconfigure else bool(existing_key)
+    currently_enabled = (ComemoConfig.load(existing_comemo).honcho.enabled) if is_reconfigure else bool(existing_key)
     if _ask_bool("Enable Honcho?", default=currently_enabled):
         workspace = _ask("Workspace", default=detected.get("honcho_workspace", "hermes"))
         comemo_cfg["honcho"] = {"enabled": True, "workspace": workspace}
@@ -354,7 +362,7 @@ def run() -> None:
     print("Mem0  (fact extraction via LLM + semantic retrieval)")
     print("  Automatically pulls facts from conversations. Get a key at mem0.ai")
     existing_key = detected.get("mem0_api_key", "")
-    currently_enabled = bool(existing_comemo.get("mem0", {}).get("enabled")) if is_reconfigure else bool(existing_key)
+    currently_enabled = (ComemoConfig.load(existing_comemo).mem0.enabled) if is_reconfigure else bool(existing_key)
     if _ask_bool("Enable Mem0?", default=currently_enabled):
         user_id = _ask("User ID", default=detected.get("mem0_user_id", "hermes-user"))
         comemo_cfg["mem0"] = {"enabled": True, "user_id": user_id}
@@ -364,7 +372,7 @@ def run() -> None:
     print("Supermemory  (3-layer retrieval: profile + entity graph + document RAG)")
     print("  Get a key at console.supermemory.ai  or run 'npx supermemory local' for self-hosted")
     existing_key = detected.get("supermemory_api_key", "")
-    currently_enabled = bool(existing_comemo.get("supermemory", {}).get("enabled")) if is_reconfigure else bool(existing_key)
+    currently_enabled = (ComemoConfig.load(existing_comemo).supermemory.enabled) if is_reconfigure else bool(existing_key)
     if _ask_bool("Enable Supermemory?", default=currently_enabled):
         namespace = _ask("Namespace", default=detected.get("supermemory_namespace", "hermes"))
         print("  Tip: use a unique namespace per Hermes profile to keep memory isolated.")
@@ -399,8 +407,6 @@ def run() -> None:
 
     print(f"Active providers: {', '.join(active)}")
     print()
-    print("To set API keys securely, run: hermes memory setup")
-    print()
 
     # resolves deps and builds the plugin venv; best-effort — config.yaml is enough if hermes isn't on PATH
     try:
@@ -422,7 +428,7 @@ def run() -> None:
         print(f"Warning: could not run hermes plugins enable — {exc}")
 
     print()
-    print("Run 'hermes memory setup' to set your API keys, then 'hermes plugins enable comemo'.")
+    print("Run 'hermes memory setup' to set your API keys, then start a new session.")
     print()
 
 
