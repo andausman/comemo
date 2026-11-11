@@ -15,7 +15,11 @@ logger = logging.getLogger(__name__)
 
 def _load_raw_cfg_from_file() -> dict[str, Any]:
     import yaml
-    hermes_home = os.environ.get("HERMES_HOME", os.path.expanduser("~/.hermes"))
+    try:
+        from hermes_constants import get_hermes_home
+        hermes_home = get_hermes_home()
+    except Exception:
+        hermes_home = os.path.expanduser("~/.hermes")
     config_path = os.path.join(hermes_home, "config.yaml")
     try:
         with open(config_path) as f:

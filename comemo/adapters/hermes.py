@@ -71,12 +71,7 @@ class HermesAdapter(_BASE):  # type: ignore[misc,valid-type]
         return self._core.is_available()
 
     def initialize(self, session_id: str, hermes_home: str = "", **kwargs: Any) -> None:
-        data_dir = os.path.expanduser(
-            hermes_home
-            or self._data_dir
-            or os.environ.get("HERMES_HOME")
-            or "~/.hermes"
-        )
+        data_dir = os.path.expanduser(hermes_home or self._data_dir or _get_hermes_home())
         self._core.initialize(session_id, data_dir)
 
     def shutdown(self) -> None:
@@ -201,16 +196,7 @@ class HermesAdapter(_BASE):  # type: ignore[misc,valid-type]
             else:
                 comemo_cfg[key] = val
 
-        # Write only plugins.comemo — leave the rest of config.yaml untouched
-        try:
-            from hermes_cli import config as hermes_config
-            hermes_config.set_plugin_config("comemo", comemo_cfg)
-        except Exception:
-            config_path = os.path.join(hermes_home, "config.yaml")
-            cfg: dict[str, Any] = {}
-            if os.path.exists(config_path):
-                with open(config_path) as f:
-                    cfg = yaml.safe_load(f) or {}
-            cfg.setdefault("plugins", {})["comemo"] = comemo_cfg
-            with open(config_path, "w") as f:
-                yaml.safe_dump(cfg, f, default_flow_style=False, allow_unicode=True)
+        from hermes_cli.config import load_config, save_config as _save_cfg
+        cfg = load_config()
+        cfg.setdefault("plugins", {})["comemo"] = comemo_cfg
+        _save_cfg(cfg)

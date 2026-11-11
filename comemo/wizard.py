@@ -386,19 +386,14 @@ def run() -> None:
         print()
         return
 
-    config_path = _hermes_config_path()
     try:
-        # Write only plugins.comemo — leave the rest of config.yaml untouched
-        try:
-            from hermes_cli import config as hermes_config
-            hermes_config.set_plugin_config("comemo", comemo_cfg)
-        except Exception:
-            cfg = _load_yaml(config_path)
-            cfg.setdefault("plugins", {})["comemo"] = comemo_cfg
-            _save_yaml(config_path, cfg)
-        print(f"Config written to {config_path}")
+        from hermes_cli.config import load_config, save_config as _save_cfg
+        cfg = load_config()
+        cfg.setdefault("plugins", {})["comemo"] = comemo_cfg
+        _save_cfg(cfg)
+        print(f"Config written to {_hermes_config_path()}")
     except Exception as exc:
-        print(f"Could not write to {config_path} ({exc})")
+        print(f"Could not write config ({exc})")
         print()
         print("Add this block to your Hermes config.yaml manually:")
         print()

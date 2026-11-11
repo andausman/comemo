@@ -41,8 +41,14 @@ class ComemoCore:
 
     def initialize(self, session_id: str, data_dir: str) -> None:
         data_dir = os.path.expanduser(data_dir)
-        retry_path = os.path.join(data_dir, "comemo-retry.db")
+        plugin_dir = os.path.join(data_dir, "comemo")
+        os.makedirs(plugin_dir, exist_ok=True)
+        retry_path = os.path.join(plugin_dir, "comemo-retry.db")
         self._retry = RetryQueue(retry_path)
+        try:
+            os.chmod(retry_path, 0o600)
+        except OSError:
+            pass
 
         self._backends = [b for b in self._build_backends() if b.is_available()]
         failed: list[BackendAdapter] = []
