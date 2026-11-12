@@ -48,10 +48,10 @@ class SupermemoryBackend(BackendAdapter):
             return
         try:
             self._client.add(
-                namespace=self._cfg.namespace,
+                self._cfg.namespace,
                 content=f"User: {user}\nAssistant: {assistant}",
                 id=self._turn_id(),
-                task_type="memory",
+                dreaming="instant",
             )
         except Exception as exc:
             logger.warning("comemo/supermemory: sync_turn failed — %s", exc)
@@ -62,11 +62,11 @@ class SupermemoryBackend(BackendAdapter):
         try:
             if query.strip():
                 results = self._client.search(
-                    namespace=self._cfg.namespace,
+                    self._cfg.namespace,
                     query=query,
                     limit=5,
                 )
-                lines = [r.content for r in results.results if getattr(r, "content", None)]
+                lines = [r.memory for r in results.results if getattr(r, "memory", None)]
             else:
                 # no query yet — fetch 5 most recent memories by date
                 page = self._client.list(
@@ -76,8 +76,8 @@ class SupermemoryBackend(BackendAdapter):
                     order="desc",
                     limit=5,
                 )
-                items = getattr(page, "memories", None) or getattr(page, "results", None) or []
-                lines = [r.content for r in items if getattr(r, "content", None)]
+                items = getattr(page, "memories", None) or []
+                lines = [r.memory for r in items if getattr(r, "memory", None)]
             return "\n".join(lines)
         except Exception as exc:
             logger.warning("comemo/supermemory: prefetch failed — %s", exc)

@@ -237,9 +237,13 @@ plugins:
     supermemory:
       enabled: false
       namespace: hermes
+    hindsight:
+      enabled: false
+      bank_id: ""
+      api_url: https://api.hindsight.vectorize.io
 ```
 
-API keys are stored securely by Hermes via `hermes memory setup` — never written to `config.yaml`. Comemo reads them through the Hermes secret scope (`HONCHO_API_KEY`, `MEM0_API_KEY`, `SUPERMEMORY_API_KEY`).
+API keys are stored securely by Hermes via `hermes memory setup` — never written to `config.yaml`. Comemo reads them through the Hermes secret scope (`HONCHO_API_KEY`, `MEM0_API_KEY`, `SUPERMEMORY_API_KEY`, `HINDSIGHT_API_KEY`).
 
 ---
 
