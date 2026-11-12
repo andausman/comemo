@@ -70,10 +70,29 @@ class SupermemoryConfig:
 
 
 @dataclass
+class HindsightConfig:
+    enabled: bool = False
+    api_key: str = ""
+    bank_id: str = ""
+    api_url: str = "https://api.hindsight.so"
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> HindsightConfig:
+        api_key = d.get("api_key") or _read_secret("HINDSIGHT_API_KEY")
+        return cls(
+            enabled=bool(d.get("enabled", bool(api_key))),
+            api_key=api_key,
+            bank_id=d.get("bank_id", ""),
+            api_url=d.get("api_url", "https://api.hindsight.so"),
+        )
+
+
+@dataclass
 class ComemoConfig:
     honcho: HonchoConfig = field(default_factory=HonchoConfig)
     mem0: Mem0Config = field(default_factory=Mem0Config)
     supermemory: SupermemoryConfig = field(default_factory=SupermemoryConfig)
+    hindsight: HindsightConfig = field(default_factory=HindsightConfig)
     fan_out_timeout: float = 5.0
     min_backends: int = 1
 
@@ -84,6 +103,7 @@ class ComemoConfig:
             honcho=HonchoConfig.from_dict(d.get("honcho") or {}),
             mem0=Mem0Config.from_dict(d.get("mem0") or {}),
             supermemory=SupermemoryConfig.from_dict(d.get("supermemory") or {}),
+            hindsight=HindsightConfig.from_dict(d.get("hindsight") or {}),
             fan_out_timeout=float(d.get("fan_out_timeout", 5.0)),
             min_backends=int(d.get("min_backends", 1)),
         )

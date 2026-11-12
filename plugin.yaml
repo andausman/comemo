@@ -1,7 +1,7 @@
 name: comemo
 version: "1.0.0"
 description: >
-  Composite Memory Meta-Provider — run Honcho, Mem0, and Supermemory
+  Composite Memory Meta-Provider — run Honcho, Mem0, Supermemory, and Hindsight
   simultaneously. Fans out writes to all configured providers in parallel, merges
   and deduplicates reads. Implements the MemoryProvider ABC as a single drop-in
   plugin so Hermes users are no longer locked into one provider.
@@ -23,6 +23,10 @@ requires_env:
     description: "Supermemory API key — get one at supermemory.ai (press Enter to skip)"
     url: "https://supermemory.ai"
     secret: true
+  - name: HINDSIGHT_API_KEY
+    description: "Hindsight API key — get one at hindsight.so (press Enter to skip)"
+    url: "https://hindsight.so"
+    secret: true
 
 hooks:
   - prefetch
@@ -42,6 +46,7 @@ python_dependencies:
   - "pyyaml>=6.0,<7"
   - "pydantic>=2.0,<3"
   - "certifi>=2024.0,<2027"
+  - "hindsight-client>=0.10.1,<2"
 
 config_schema:
   honcho.enabled:
@@ -80,6 +85,22 @@ config_schema:
     type: string
     default: hermes
     description: Supermemory namespace for isolating memories per profile
+  hindsight.enabled:
+    type: boolean
+    default: false
+    description: Enable Hindsight (vectorized knowledge graph + entity resolution — hindsight.so) [true/false]
+  hindsight.api_key:
+    type: secret
+    description: Hindsight API key
+    env: HINDSIGHT_API_KEY
+  hindsight.bank_id:
+    type: string
+    default: ""
+    description: Hindsight bank ID — isolates memories per profile or project
+  hindsight.api_url:
+    type: string
+    default: "https://api.hindsight.so"
+    description: Hindsight API base URL
   fan_out_timeout:
     type: number
     default: 5.0

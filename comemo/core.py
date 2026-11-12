@@ -5,6 +5,7 @@ import os
 from typing import Any
 
 from .backends.base import BackendAdapter
+from .backends.hindsight import HindsightBackend
 from .backends.honcho import HonchoBackend
 from .backends.mem0 import Mem0Backend
 from .backends.supermemory import SupermemoryBackend
@@ -121,6 +122,7 @@ class ComemoCore:
             HonchoBackend(self._cfg.honcho),
             Mem0Backend(self._cfg.mem0),
             SupermemoryBackend(self._cfg.supermemory),
+            HindsightBackend(self._cfg.hindsight),
         ]
 
     def _merge(self, chunks: list[str]) -> str:

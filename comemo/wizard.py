@@ -94,6 +94,7 @@ def _detect_native_configs() -> dict[str, str]:
         ("HONCHO_API_KEY",      "honcho_api_key"),
         ("MEM0_API_KEY",        "mem0_api_key"),
         ("SUPERMEMORY_API_KEY", "supermemory_api_key"),
+        ("HINDSIGHT_API_KEY",   "hindsight_api_key"),
     ]:
         key = _read_secret(env_var)
         if key:
@@ -164,6 +165,7 @@ def status() -> None:
 def test() -> None:
     import time
     import uuid
+    from .backends.hindsight import HindsightBackend
     from .backends.honcho import HonchoBackend
     from .backends.mem0 import Mem0Backend
     from .backends.supermemory import SupermemoryBackend
@@ -200,6 +202,7 @@ def test() -> None:
         HonchoBackend(cfg.honcho),
         Mem0Backend(cfg.mem0),
         SupermemoryBackend(cfg.supermemory),
+        HindsightBackend(cfg.hindsight),
     ]
 
     print(f"\ntesting Comemo providers  (session: {session_id})\n")
@@ -268,6 +271,7 @@ def test() -> None:
 
 def inspect(query: str = " ", limit: int = 20) -> None:
     import tempfile
+    from .backends.hindsight import HindsightBackend
     from .backends.honcho import HonchoBackend
     from .backends.mem0 import Mem0Backend
     from .backends.supermemory import SupermemoryBackend
@@ -284,6 +288,7 @@ def inspect(query: str = " ", limit: int = 20) -> None:
         HonchoBackend(cfg.honcho),
         Mem0Backend(cfg.mem0),
         SupermemoryBackend(cfg.supermemory),
+        HindsightBackend(cfg.hindsight),
     ]
 
     for b in backends:
@@ -342,6 +347,7 @@ def run() -> None:
                 ("honcho", active_cfg.honcho.enabled),
                 ("mem0", active_cfg.mem0.enabled),
                 ("supermemory", active_cfg.supermemory.enabled),
+                ("hindsight", active_cfg.hindsight.enabled),
             ] if enabled
         ]
         print(f"  Existing config found — currently active: {', '.join(active_now) or 'none'}")
@@ -377,6 +383,16 @@ def run() -> None:
         namespace = _ask("Namespace", default=detected.get("supermemory_namespace", "hermes"))
         print("  Tip: use a unique namespace per Hermes profile to keep memory isolated.")
         comemo_cfg["supermemory"] = {"enabled": True, "namespace": namespace}
+    print()
+
+    # --- Hindsight ---
+    print("Hindsight  (vectorized knowledge graph + entity resolution)")
+    print("  Stores memories as a graph with entity linking. Get a key at hindsight.so")
+    existing_key = detected.get("hindsight_api_key", "")
+    currently_enabled = (ComemoConfig.load(existing_comemo).hindsight.enabled) if is_reconfigure else bool(existing_key)
+    if _ask_bool("Enable Hindsight?", default=currently_enabled):
+        bank_id = _ask("Bank ID", default=detected.get("hindsight_bank_id", ""))
+        comemo_cfg["hindsight"] = {"enabled": True, "bank_id": bank_id}
     print()
 
     active = [k for k, v in comemo_cfg.items() if isinstance(v, dict) and v.get("enabled")]

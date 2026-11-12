@@ -2,7 +2,7 @@
 
 Comemo is a composite memory provider for Hermes Agent. It runs multiple memory providers at the same time instead of one.
 
-Hermes lets you pick one memory provider. You can use Honcho, Mem0, or Supermemory, but only one at a time. Comemo sits in that single slot and writes to all of them at once. Reads come back merged and deduplicated. If one provider fails, the others keep running.
+Hermes lets you pick one memory provider. You can use Honcho, Mem0, Supermemory, or Hindsight, but only one at a time. Comemo sits in that single slot and writes to all of them at once. Reads come back merged and deduplicated. If one provider fails, the others keep running.
 
 ---
 
@@ -34,6 +34,7 @@ Your conversation
        +---> Honcho       (optional, cloud)
        +---> Mem0         (optional, cloud)
        +---> Supermemory  (optional, cloud)
+       +---> Hindsight    (optional, cloud)
 ```
 
 On every write, Comemo fans out to all active providers in parallel using a thread pool. If a provider fails, the write goes into a local SQLite retry queue and replays at the next session start.
@@ -58,12 +59,10 @@ Then run `hermes memory setup` — Hermes walks through enabling each provider a
 
 ---
 
-### From source
+### From source (GitHub)
 
 ```bash
-git clone https://github.com/andausman/comemo.git
-cd comemo
-hermes plugins install .
+hermes plugins install andausman/comemo
 hermes memory setup
 ```
 
@@ -194,6 +193,12 @@ Structured knowledge storage with 3-layer retrieval: user profile, entity graph,
 
 Requires an API key from [supermemory.ai](https://supermemory.ai). Set via `SUPERMEMORY_API_KEY`.
 
+### Hindsight
+
+Vectorized knowledge graph with entity resolution. Stores memories as interconnected entities and uses hybrid (vector + graph) retrieval for precise recall.
+
+Requires an API key from [hindsight.so](https://hindsight.so). Set via `HINDSIGHT_API_KEY`. Optionally set a `bank_id` to scope memories per project or profile.
+
 ---
 
 ## Combinations
@@ -206,7 +211,8 @@ You can enable any subset of providers:
 | Mem0 only | Automatic fact extraction and semantic recall. |
 | Honcho + Mem0 | Identity tracking plus auto-extracted facts. |
 | Supermemory only | Structured knowledge store with namespace scoping. |
-| All three | Full composite memory across every available backend. |
+| Hindsight only | Knowledge graph with entity resolution and hybrid retrieval. |
+| All four | Full composite memory across every available backend. |
 
 When Comemo is active it replaces the Hermes built-in memory provider. Existing built-in memories are not migrated automatically.
 

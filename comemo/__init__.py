@@ -50,6 +50,12 @@ def register(ctx: Any) -> None:
                 "api_key": get_config("supermemory.api_key", ""),
                 "namespace": get_config("supermemory.namespace", "hermes"),
             },
+            "hindsight": {
+                "enabled": get_config("hindsight.enabled", False),
+                "api_key": get_config("hindsight.api_key", ""),
+                "bank_id": get_config("hindsight.bank_id", ""),
+                "api_url": get_config("hindsight.api_url", "https://api.hindsight.so"),
+            },
             "fan_out_timeout": get_config("fan_out_timeout", 5.0),
         }
     else:
@@ -80,7 +86,7 @@ def register(ctx: Any) -> None:
     if not adapter.is_available():
         logger.warning(
             "comemo: no providers available — enable at least one provider "
-            "(honcho, mem0, or supermemory) under plugins.comemo in config.yaml"
+            "(honcho, mem0, supermemory, or hindsight) under plugins.comemo in config.yaml"
         )
         return
 
