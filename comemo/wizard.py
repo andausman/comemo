@@ -387,7 +387,7 @@ def run() -> None:
 
     # --- Hindsight ---
     print("Hindsight  (vectorized knowledge graph + entity resolution)")
-    print("  Stores memories as a graph with entity linking. Get a key at hindsight.so")
+    print("  Stores memories as a graph with entity linking. Get a key at hindsight.vectorize.io")
     existing_key = detected.get("hindsight_api_key", "")
     currently_enabled = (ComemoConfig.load(existing_comemo).hindsight.enabled) if is_reconfigure else bool(existing_key)
     if _ask_bool("Enable Hindsight?", default=currently_enabled):

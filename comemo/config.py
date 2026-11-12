@@ -74,7 +74,7 @@ class HindsightConfig:
     enabled: bool = False
     api_key: str = ""
     bank_id: str = ""
-    api_url: str = "https://api.hindsight.so"
+    api_url: str = "https://api.hindsight.vectorize.io"
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> HindsightConfig:
@@ -83,7 +83,7 @@ class HindsightConfig:
             enabled=bool(d.get("enabled", bool(api_key))),
             api_key=api_key,
             bank_id=d.get("bank_id", ""),
-            api_url=d.get("api_url", "https://api.hindsight.so"),
+            api_url=d.get("api_url", "https://api.hindsight.vectorize.io"),
         )
 
 

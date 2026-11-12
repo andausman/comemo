@@ -197,7 +197,7 @@ Requires an API key from [supermemory.ai](https://supermemory.ai). Set via `SUPE
 
 Vectorized knowledge graph with entity resolution. Stores memories as interconnected entities and uses hybrid (vector + graph) retrieval for precise recall.
 
-Requires an API key from [hindsight.so](https://hindsight.so). Set via `HINDSIGHT_API_KEY`. Optionally set a `bank_id` to scope memories per project or profile.
+Requires an API key from [hindsight.vectorize.io](https://hindsight.vectorize.io). Set via `HINDSIGHT_API_KEY`. Optionally set a `bank_id` to scope memories per project or profile.
 
 ---
 

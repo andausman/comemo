@@ -24,8 +24,8 @@ requires_env:
     url: "https://supermemory.ai"
     secret: true
   - name: HINDSIGHT_API_KEY
-    description: "Hindsight API key — get one at hindsight.so (press Enter to skip)"
-    url: "https://hindsight.so"
+    description: "Hindsight API key — get one at hindsight.vectorize.io (press Enter to skip)"
+    url: "https://hindsight.vectorize.io"
     secret: true
 
 hooks:
@@ -88,7 +88,7 @@ config_schema:
   hindsight.enabled:
     type: boolean
     default: false
-    description: Enable Hindsight (vectorized knowledge graph + entity resolution — hindsight.so) [true/false]
+    description: Enable Hindsight (vectorized knowledge graph + entity resolution — hindsight.vectorize.io) [true/false]
   hindsight.api_key:
     type: secret
     description: Hindsight API key
@@ -99,7 +99,7 @@ config_schema:
     description: Hindsight bank ID — isolates memories per profile or project
   hindsight.api_url:
     type: string
-    default: "https://api.hindsight.so"
+    default: "https://api.hindsight.vectorize.io"
     description: Hindsight API base URL
   fan_out_timeout:
     type: number

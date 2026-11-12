@@ -183,17 +183,17 @@ class HermesAdapter(_BASE):  # type: ignore[misc,valid-type]
              "description": "Supermemory namespace — isolates memories per profile",
              "type": "string", "default": "hermes"},
             {"key": "hindsight.enabled",
-             "description": "Enable Hindsight (vectorized knowledge graph + entity resolution — hindsight.so) [true/false]",
+             "description": "Enable Hindsight (vectorized knowledge graph + entity resolution — hindsight.vectorize.io) [true/false]",
              "type": "boolean", "default": False},
             {"key": "hindsight.api_key",
-             "description": "Hindsight API key (hindsight.so)",
+             "description": "Hindsight API key (hindsight.vectorize.io)",
              "type": "secret", "env_var": "HINDSIGHT_API_KEY"},
             {"key": "hindsight.bank_id",
              "description": "Hindsight bank ID — isolates memories per profile or project",
              "type": "string", "default": ""},
             {"key": "hindsight.api_url",
-             "description": "Hindsight API base URL (default: https://api.hindsight.so)",
-             "type": "string", "default": "https://api.hindsight.so"},
+             "description": "Hindsight API base URL (default: https://api.hindsight.vectorize.io)",
+             "type": "string", "default": "https://api.hindsight.vectorize.io"},
         ]
 
     def save_config(self, values: dict[str, Any], hermes_home: str) -> None:
