@@ -150,6 +150,7 @@ def status() -> None:
         ("honcho",      cfg.honcho.enabled,      cfg.honcho.api_key,      f"workspace={cfg.honcho.workspace}"),
         ("mem0",        cfg.mem0.enabled,         cfg.mem0.api_key,        f"user_id={cfg.mem0.user_id}"),
         ("supermemory", cfg.supermemory.enabled,  cfg.supermemory.api_key, f"namespace={cfg.supermemory.namespace}"),
+        ("hindsight",   cfg.hindsight.enabled,    cfg.hindsight.api_key,   f"bank_id={cfg.hindsight.bank_id}"),
     ]
 
     for name, enabled, key, detail in rows:
